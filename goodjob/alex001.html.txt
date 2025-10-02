@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>台股三重篩選系統</title>
+    <title>台股進階八重篩選系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -11,7 +11,9 @@
             font-family: 'Inter', 'Noto Sans TC', sans-serif;
         }
         .loader {
-            border-top-color: #3498db;
+            border: 4px solid #f3f3f3; /* Light grey */
+            border-top: 4px solid #3498db; /* Blue */
+            border-radius: 50%;
             animation: spin 1s linear infinite;
         }
         @keyframes spin {
@@ -21,13 +23,14 @@
         }
         /* For table sticky header */
         .table-container {
-            max-height: 60vh;
+            max-height: 50vh; /* Adjusted for more controls */
             overflow-y: auto;
         }
         thead th {
             position: sticky;
             top: 0;
             z-index: 10;
+            background-color: #f3f4f6;
         }
     </style>
 </head>
@@ -36,52 +39,99 @@
     <div class="w-full max-w-7xl bg-white rounded-2xl shadow-lg p-6 md:p-8 space-y-6">
         <!-- Header -->
         <div class="text-center">
-            <h1 class="text-3xl font-bold text-gray-900">台股三重篩選系統</h1>
-            <p class="text-gray-500 mt-2">整合三大條件，篩選優質潛力股</p>
+            <h1 class="text-3xl font-bold text-gray-900">台股進階八重篩選系統</h1>
+            <p class="text-gray-500 mt-2">整合財務體質、營收動能、獲利、技術、可轉債及券商行為</p>
         </div>
 
-        <!-- Screening Criteria -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-            <div class="bg-gray-50 p-4 rounded-lg">
-                <h3 class="font-semibold text-lg text-indigo-600">優良獲利能力</h3>
-                <p class="text-sm text-gray-600 mt-1">近四季本業稅後淨利率 > 10%</p>
+        <!-- Screening Criteria (8 Cards) -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 text-center">
+            <!-- C1 - Profit Margin (4Q) -->
+            <div class="criteria-card bg-gray-50 p-3 rounded-xl shadow-sm border border-indigo-200">
+                <h3 class="font-semibold text-base text-indigo-600">C1: 獲利能力</h3>
+                <p class="text-xs text-gray-600 mt-1">近四季淨利率 > 10%</p>
             </div>
-            <div class="bg-gray-50 p-4 rounded-lg">
-                <h3 class="font-semibold text-lg text-indigo-600">高效經營效率</h3>
-                <p class="text-sm text-gray-600 mt-1">近四季本業 ROE > 15%</p>
+            <!-- C2 - ROE (4Q) -->
+            <div class="criteria-card bg-gray-50 p-3 rounded-xl shadow-sm border border-indigo-200">
+                <h3 class="font-semibold text-base text-indigo-600">C2: 經營效率</h3>
+                <p class="text-xs text-gray-600 mt-1">近四季 ROE > 15%</p>
             </div>
-            <div class="bg-gray-50 p-4 rounded-lg">
-                <h3 class="font-semibold text-lg text-indigo-600">強勁上漲動能</h3>
-                <p class="text-sm text-gray-600 mt-1">週線 MACD > 0 (紅柱)</p>
+            <!-- C3 - MACD -->
+            <div class="criteria-card bg-gray-50 p-3 rounded-xl shadow-sm border border-indigo-200">
+                <h3 class="font-semibold text-base text-indigo-600">C3: 上漲動能</h3>
+                <p class="text-xs text-gray-600 mt-1">週線 MACD OSC > 0</p>
+            </div>
+            <!-- C4 - CB Checkbox (Optional) -->
+            <div id="cbCriteriaCard" class="criteria-card p-3 rounded-xl shadow-md border border-gray-300 transition-colors duration-200 bg-white">
+                <h3 class="font-semibold text-base flex items-center justify-center space-x-1 text-gray-800">
+                    <input type="checkbox" id="checkCB" class="h-4 w-4 text-indigo-600 border-gray-400 rounded focus:ring-indigo-500" checked>
+                    <label for="checkCB">C4: 可轉債 (CB)</label>
+                </h3>
+                <p id="cbCriteriaStatus" class="text-xs text-gray-500 mt-1 font-medium">流通中 CB</p>
+            </div>
+            
+            <!-- C5 - Cumulative Revenue YoY -->
+            <div class="criteria-card bg-gray-50 p-3 rounded-xl shadow-sm border border-green-200">
+                <h3 class="font-semibold text-base text-green-600">C5: 營收動能</h3>
+                <p class="text-xs text-gray-600 mt-1">累計營收YoY > <span id="displayRevenueYoY">0%</span></p>
+            </div>
+            <!-- C6 - 5-Year FCF -->
+            <div class="criteria-card bg-gray-50 p-3 rounded-xl shadow-sm border border-green-200">
+                <h3 class="font-semibold text-base text-green-600">C6: 長期金流</h3>
+                <p class="text-xs text-gray-600 mt-1">近五年 FCF 累積 > 0</p>
+            </div>
+            <!-- C7 - 5-Year Avg ROE -->
+            <div class="criteria-card bg-gray-50 p-3 rounded-xl shadow-sm border border-green-200">
+                <h3 class="font-semibold text-base text-green-600">C7: 長期效率</h3>
+                <p class="text-xs text-gray-600 mt-1">近五年平均 ROE > 10%</p>
+            </div>
+            <!-- C8 - Branch Broker Activity -->
+            <div class="criteria-card bg-gray-50 p-3 rounded-xl shadow-sm border border-green-200">
+                <h3 class="font-semibold text-base text-green-600">C8: 主力券商</h3>
+                <p class="text-xs text-gray-600 mt-1">近60日峰值 > <span id="displayBranchBrokers">300</span>家</p>
             </div>
         </div>
 
         <!-- Controls -->
-        <div class="bg-white p-4 rounded-lg space-y-4">
+        <div class="bg-white p-4 rounded-lg space-y-4 border border-gray-200">
+            <!-- API Token Input -->
             <div>
                 <label for="apiToken" class="block text-sm font-medium text-gray-700 mb-1">FinMind API Token</label>
-                <input type="password" id="apiToken" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="請在此貼上您的 Token (建議申請免費Token)">
-                <p class="text-xs text-gray-500 mt-1">前往 <a href="https://finmindtrade.com/" target="_blank" class="text-indigo-500 hover:underline">FinMind</a> 官網申請免費 Token。</p>
+                <input type="password" id="apiToken" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="請在此貼上您的 Token">
+                <p class="text-xs text-gray-500 mt-1">前往 <a href="https://finmindtrade.com/" target="_blank" class="text-indigo-500 hover:underline font-medium">FinMind</a> 官網申請免費 Token。</p>
+            </div>
+            
+            <!-- Customizable Numerical Inputs -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label for="minRevenueYoY" class="block text-sm font-medium text-gray-700 mb-1">C5: 累計月營收年增率最低 (%)</label>
+                    <input type="number" id="minRevenueYoY" value="0" min="-100" max="1000" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                </div>
+                <div>
+                    <label for="minBranchBrokers" class="block text-sm font-medium text-gray-700 mb-1">C8: 分公司交易家數門檻</label>
+                    <input type="number" id="minBranchBrokers" value="300" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                </div>
             </div>
 
+            <!-- Screening Mode Radios -->
             <div class="flex items-center space-x-4">
                 <div class="flex items-center">
                     <input type="radio" id="screenAll" name="screenMode" value="all" class="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500" checked>
-                    <label for="screenAll" class="ml-2 block text-sm text-gray-900">篩選整個市場</label>
+                    <label for="screenAll" class="ml-2 block text-sm text-gray-900 font-medium">篩選整個市場 (排除金融/營建)</label>
                 </div>
                 <div class="flex items-center">
                     <input type="radio" id="screenCustom" name="screenMode" value="custom" class="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500">
-                    <label for="screenCustom" class="ml-2 block text-sm text-gray-900">篩選指定列表</label>
+                    <label for="screenCustom" class="ml-2 block text-sm text-gray-900 font-medium">篩選指定列表</label>
                 </div>
             </div>
 
             <div id="customStockListContainer" class="hidden">
                 <label for="customStockList" class="block text-sm font-medium text-gray-700 mb-1">股票代碼列表</label>
-                <textarea id="customStockList" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="請輸入股票代碼，以逗號、空格或換行分隔&#10;例如: 2330, 2317, 2454"></textarea>
+                <textarea id="customStockList" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="請輸入股票代碼，以逗號、空格或換行分隔&#10;例如: 2330, 2317, 2454"></textarea>
             </div>
 
+            <!-- Start Button -->
             <div>
-                <button id="startButton" class="w-full bg-indigo-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center">
+                <button id="startButton" class="w-full bg-indigo-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center transition duration-150 ease-in-out">
                     <svg id="buttonIcon" class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
                     </svg>
@@ -93,23 +143,26 @@
 
         <!-- Status & Results -->
         <div>
-            <div id="status" class="text-sm text-gray-600 p-3 bg-gray-50 rounded-md min-h-[40px] flex items-center">請點擊 "開始篩選" 按鈕。</div>
-            <div id="resultsContainer" class="mt-4">
-                 <div class="flex justify-between items-center mb-2">
-                    <h2 class="text-xl font-semibold">篩選結果 <span id="resultCount" class="text-base font-normal text-gray-500"></span></h2>
-                    <button id="exportButton" class="hidden bg-green-600 text-white text-sm font-semibold py-2 px-3 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+            <div id="status" class="text-sm text-gray-600 p-3 bg-indigo-100 border border-indigo-200 rounded-md min-h-[40px] flex items-center transition-colors duration-200">請點擊 "開始篩選" 按鈕。注意：C5/C6/C7/C8 需抓取大量資料，篩選速度會較慢。</div>
+            <div id="resultsContainer" class="mt-6">
+                <div class="flex justify-between items-center mb-2">
+                    <h2 class="text-xl font-semibold text-gray-800">篩選結果 <span id="resultCount" class="text-base font-normal text-gray-500"></span></h2>
+                    <button id="exportButton" class="hidden bg-green-600 text-white text-sm font-semibold py-2 px-3 rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-150 ease-in-out">
                         匯出 CSV
                     </button>
-                 </div>
-                <div class="table-container border border-gray-200 rounded-lg">
+                </div>
+                <div class="table-container border border-gray-300 rounded-lg shadow-inner">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-100">
                             <tr>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">股票代號</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">股票名稱</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">本業淨利率(%)</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">本業ROE(%)</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">週 MACD OSC</th>
+                                <th scope="col" class="px-3 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">股票代號</th>
+                                <th scope="col" class="px-3 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">名稱</th>
+                                <th scope="col" class="px-3 py-3 text-right text-xs font-bold text-gray-600 uppercase tracking-wider">淨利率(C1)</th>
+                                <th scope="col" class="px-3 py-3 text-right text-xs font-bold text-gray-600 uppercase tracking-wider">ROE(C2)</th>
+                                <th scope="col" class="px-3 py-3 text-right text-xs font-bold text-gray-600 uppercase tracking-wider">營收YoY(C5)</th>
+                                <th scope="col" class="px-3 py-3 text-right text-xs font-bold text-gray-600 uppercase tracking-wider">MACD(C3)</th>
+                                <th scope="col" class="px-3 py-3 text-right text-xs font-bold text-gray-600 uppercase tracking-wider">家數峰值(C8)</th>
+                                <th scope="col" class="px-3 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">CB狀態(C4)</th>
                             </tr>
                         </thead>
                         <tbody id="resultsBody" class="bg-white divide-y divide-gray-200">
@@ -117,7 +170,7 @@
                         </tbody>
                     </table>
                 </div>
-                 <p id="noResults" class="text-center text-gray-500 py-8 hidden">沒有符合條件的股票。</p>
+                <p id="noResults" class="text-center text-gray-500 py-8 hidden text-lg">😔 沒有符合所有條件的股票。</p>
             </div>
         </div>
     </div>
@@ -129,39 +182,71 @@ class FinMindAPI {
     constructor(token = "") {
         this.baseUrl = "https://api.finmindtrade.com/api/v4/data";
         this.token = token;
+        // Maximum number of times to retry an API call
+        this.MAX_RETRIES = 3; 
     }
 
     setToken(token) {
         this.token = token;
     }
 
+    // Generalized data fetching with Exponential Backoff
     async getData(dataset, data_id = "", start_date = "", end_date = "") {
-        const params = new URLSearchParams({
-            dataset,
-            data_id,
-            start_date,
-            end_date,
-            token: this.token
-        });
+        for (let attempt = 0; attempt < this.MAX_RETRIES; attempt++) {
+            const params = new URLSearchParams({
+                dataset,
+                data_id,
+                start_date,
+                end_date,
+                token: this.token
+            });
 
-        try {
-            const response = await fetch(`${this.baseUrl}?${params.toString()}`);
-            if (!response.ok) {
-                throw new Error(`HTTP 錯誤! 狀態: ${response.status}`);
+            try {
+                const response = await fetch(`${this.baseUrl}?${params.toString()}`);
+                
+                // Check for rate limit (429) or server error
+                if (response.status === 429 || !response.ok) { 
+                    const delay = Math.pow(2, attempt) * 1000 + (Math.random() * 1000); // Exponential delay + jitter
+                    const statusText = response.status === 429 ? "速率限制 (429)" : `HTTP 錯誤 (${response.status})`;
+                    console.warn(`[API Retry] ${statusText} for ${data_id} (${dataset}). Retrying in ${(delay / 1000).toFixed(1)}s... (Attempt ${attempt + 1})`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    continue; // Go to next attempt
+                }
+
+                const data = await response.json();
+
+                if (data.status === 200) {
+                    return data.data;
+                } else {
+                    // Handle specific FinMind API error message
+                    if (data.msg && data.msg.includes("data is empty")) return []; // Data not found is not a critical error
+                    
+                    if (attempt < this.MAX_RETRIES - 1) {
+                        const delay = Math.pow(2, attempt) * 1000 + (Math.random() * 1000);
+                        console.warn(`[API Retry] FinMind Error (${data_id}, attempt ${attempt + 1}): ${data.msg}. Retrying in ${(delay / 1000).toFixed(1)}s...`);
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        continue;
+                    } else {
+                        console.error(`FinMind API 錯誤 (${data_id}, ${dataset}):`, data.msg);
+                        updateStatus(`FinMind API 錯誤 (${data_id}): ${data.msg}`, true);
+                        return [];
+                    }
+                }
+            } catch (error) {
+                // Handle network errors
+                if (attempt < this.MAX_RETRIES - 1) {
+                    const delay = Math.pow(2, attempt) * 1000 + (Math.random() * 1000);
+                    console.warn(`[Network Retry] 請求失敗 for ${data_id}. Retrying in ${(delay / 1000).toFixed(1)}s... (Attempt ${attempt + 1})`, error);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    continue;
+                } else {
+                    console.error(`請求失敗 (${data_id}):`, error);
+                    updateStatus(`請求失敗 (${data_id}): ${error.message}`, true);
+                    return [];
+                }
             }
-            const data = await response.json();
-            if (data.status === 200) {
-                return data.data;
-            } else {
-                console.error(`API 錯誤 (${data_id}):`, data.msg);
-                updateStatus(`API 錯誤 (${data_id}): ${data.msg}`, true);
-                return [];
-            }
-        } catch (error) {
-            console.error(`請求失敗 (${data_id}):`, error);
-            updateStatus(`請求失敗 (${data_id}): ${error.message}`, true);
-            return [];
         }
+        return [];
     }
 }
 
@@ -172,6 +257,7 @@ class StockScreener {
     }
     
     async initialize() {
+        if (this.stockInfo.length > 0) return;
         const stockInfoData = await this.api.getData("TaiwanStockInfo");
         if (stockInfoData.length > 0) {
             this.stockInfo = stockInfoData;
@@ -190,6 +276,7 @@ class StockScreener {
             .map(s => s.stock_id);
     }
 
+    // C1: Trailing 4-Quarter Core Net Profit Margin > 10%
     async calculateCoreProfitMargin(stockId) {
         const endDate = new Date().toISOString().slice(0, 10);
         const startDate = new Date(Date.now() - 730 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -206,18 +293,17 @@ class StockScreener {
         for (const row of sortedDf) {
             const operatingIncome = row.OperatingIncome || 0;
             const revenue = row.Revenue || 0;
-            const taxRate = row.tax_rate || 20;
+            const taxRate = row.tax_rate || 20; 
 
             if (revenue > 0) {
-                const afterTaxProfit = operatingIncome * (1 - taxRate / 100);
+                const afterTaxProfit = operatingIncome * (1 - taxRate / 100); 
                 const margin = (afterTaxProfit / revenue) * 100;
                 quarterlyMargins.push(margin);
-                details.quarters.push({ date: row.date, margin: margin.toFixed(2) });
             }
         }
 
-        if (quarterlyMargins.length > 0) {
-            const avgMargin = quarterlyMargins.reduce((a, b) => a + b, 0) / quarterlyMargins.length;
+        if (quarterlyMargins.length === 4) {
+            const avgMargin = quarterlyMargins.reduce((a, b) => a + b, 0) / 4;
             details.average = avgMargin.toFixed(2);
             return [avgMargin, details];
         }
@@ -225,6 +311,7 @@ class StockScreener {
         return [0, {}];
     }
     
+    // C2: Trailing 4-Quarter Core ROE > 15%
     async calculateCoreRoe(stockId) {
         const endDate = new Date().toISOString().slice(0, 10);
         const startDate = new Date(Date.now() - 730 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -240,8 +327,9 @@ class StockScreener {
         const sortedBalance = balanceDf.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
 
         const totalOperatingIncome = sortedIncome.reduce((sum, row) => sum + (row.OperatingIncome || 0), 0);
+        
         const taxRates = sortedIncome.map(row => row.tax_rate || 20);
-        const avgTaxRate = taxRates.reduce((a, b) => a + b, 0) / taxRates.length;
+        const avgTaxRate = taxRates.length > 0 ? taxRates.reduce((a, b) => a + b, 0) / taxRates.length : 20;
         
         const totalAfterTaxProfit = totalOperatingIncome * (1 - avgTaxRate / 100);
 
@@ -250,40 +338,50 @@ class StockScreener {
 
         if (avgEquity > 0) {
             const coreRoe = (totalAfterTaxProfit / avgEquity) * 100;
-            const details = {
-                core_roe: coreRoe.toFixed(2),
-                total_profit: totalAfterTaxProfit.toFixed(2),
-                avg_equity: avgEquity.toFixed(2)
-            };
+            const details = { core_roe: coreRoe.toFixed(2) };
             return [coreRoe, details];
         }
 
         return [0, {}];
     }
 
+    // C3: Weekly MACD OSC > 0
     async calculateMacdWeekly(stockId) {
         const endDate = new Date().toISOString().slice(0, 10);
-        const startDate = new Date(Date.now() - 540 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+        const startDate = new Date(Date.now() - 540 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10); 
         
         const df = await this.api.getData("TaiwanStockPrice", stockId, startDate, endDate);
         
-        if (!df || df.length < 100) return [false, {}];
+        if (!df || df.length < 100) return [false, {}]; 
 
-        // Resample to weekly data
+        // --- Resample Daily to Weekly (using Friday's close as week-end) ---
         const weeklyData = {};
         df.forEach(row => {
             const date = new Date(row.date);
-            const dayOfWeek = date.getDay();
+            const dayOfWeek = date.getDay(); // 0=Sun, 5=Fri, 6=Sat
             const friday = new Date(date);
-            friday.setDate(date.getDate() - dayOfWeek + 5);
-            weeklyData[friday.toISOString().slice(0, 10)] = parseFloat(row.close);
+            
+            // Logic to find the corresponding Friday's date for the week
+            if (dayOfWeek === 6) { friday.setDate(date.getDate() - 1); } 
+            else if (dayOfWeek === 0) { friday.setDate(date.getDate() - 2); } 
+            else { friday.setDate(date.getDate() - dayOfWeek + 5); }
+
+            const fridayDateKey = friday.toISOString().slice(0, 10);
+            
+            // Only take the last close price of the week
+            if (!weeklyData[fridayDateKey] || date > new Date(weeklyData[fridayDateKey].date)) {
+                 weeklyData[fridayDateKey] = { date: row.date, close: parseFloat(row.close) };
+            }
         });
 
-        const weeklyCloses = Object.keys(weeklyData).sort().map(key => weeklyData[key]);
+        const weeklyCloses = Object.keys(weeklyData)
+            .sort()
+            .map(key => weeklyData[key].close)
+            .filter(c => !isNaN(c)); 
 
-        if (weeklyCloses.length < 35) return [false, {}];
+        if (weeklyCloses.length < 35) return [false, {}]; 
         
-        // Calculate MACD
+        // --- Calculate MACD ---
         const calculateEma = (data, span) => {
             const k = 2 / (span + 1);
             let ema = [data[0]];
@@ -297,18 +395,176 @@ class StockScreener {
         const ema26 = calculateEma(weeklyCloses, 26);
         const dif = ema12.map((val, i) => val - ema26[i]);
         const dem = calculateEma(dif, 9);
-        const osc = dif.map((val, i) => (val - dem[i]) * 2); // FinMind OSC definition
+        const osc = dif.map((val, i) => (val - dem[i]) * 2); 
 
         const latestOsc = osc[osc.length - 1];
 
-        const details = {
-            osc: latestOsc.toFixed(4),
-            dif: dif[dif.length - 1].toFixed(4),
-            dem: dem[dem.length - 1].toFixed(4),
-            date: Object.keys(weeklyData).sort().pop()
-        };
+        const details = { osc: latestOsc.toFixed(4) };
 
-        return [latestOsc > 0, details];
+        return [latestOsc > 0, details]; 
+    }
+    
+    // C4: Check for outstanding Convertible Bonds (CBs)
+    async checkConvertibleBond(stockId) {
+        const today = new Date().toISOString().slice(0, 10);
+        const df = await this.api.getData("TaiwanStockCb", stockId); 
+        
+        if (!df || df.length === 0) return [false, { status: "無發行" }];
+
+        const outstandingCbs = df.filter(row => {
+            if (row.due_date && row.due_date > today) {
+                return true;
+            }
+            return false;
+        });
+
+        const status = outstandingCbs.length > 0 ? "流通中" : "已到期/無效";
+        return [outstandingCbs.length > 0, { status }];
+    }
+
+    // C5: Cumulative Monthly Revenue YoY Growth > Target %
+    async calculateCumulativeRevenueYoY(stockId) {
+        const today = new Date();
+        const endDate = today.toISOString().slice(0, 10);
+        const startDate = new Date(today.setFullYear(today.getFullYear() - 3)).toISOString().slice(0, 10); 
+        
+        const df = await this.api.getData("TaiwanStockMonthRevenue", stockId, startDate, endDate);
+        
+        if (!df || df.length < 24) return [0, {}];
+
+        // Sort by date descending and take the most recent 24 records
+        const sortedDf = df.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 24);
+
+        if (sortedDf.length < 24) return [0, {}];
+
+        // Last 12 months (Current Trailing)
+        const currentTrailingRevenue = sortedDf.slice(0, 12).reduce((sum, row) => sum + (row.Revenue || 0), 0);
+        
+        // Previous 12 months (Previous Trailing)
+        const previousTrailingRevenue = sortedDf.slice(12, 24).reduce((sum, row) => sum + (row.Revenue || 0), 0);
+
+        let yoy = 0;
+        if (previousTrailingRevenue > 0) {
+            yoy = ((currentTrailingRevenue - previousTrailingRevenue) / previousTrailingRevenue) * 100;
+        } else if (currentTrailingRevenue > 0) {
+            yoy = 9999; // Represents huge growth from near zero base
+        }
+
+        const details = { yoy: yoy.toFixed(2) };
+        return [yoy, details];
+    }
+    
+    // C6: 5-Year Free Cash Flow Sum > 0
+    async calculateFiveYearFCF(stockId) {
+        const today = new Date();
+        const startDate = new Date(today.setFullYear(today.getFullYear() - 6)).toISOString().slice(0, 10); // 6 years to ensure 20 quarters
+        
+        const df = await this.api.getData("TaiwanStockCashFlow", stockId, startDate);
+        
+        if (!df || df.length < 20) return [false, { sum: 0 }];
+
+        const sortedDf = df.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 20);
+        if (sortedDf.length < 20) return [false, { sum: 0 }];
+
+        let totalFCF = 0;
+        for (const row of sortedDf) {
+            const OCF = row.CashFlowsFromUsedInOperatingActivities || 0;
+            // CapEx is usually a cash OUTFLOW (negative in FinMind data)
+            const CapEx = row.PurchasesOfPropertyPlantAndEquipment || 0; 
+            
+            // FCF = OCF + CapEx 
+            const FCF = OCF + CapEx; 
+            totalFCF += FCF;
+        }
+
+        const pass = totalFCF > 0;
+        return [pass, { sum: totalFCF.toFixed(0) }];
+    }
+
+    // C7: 5-Year Average Core ROE > 10%
+    async calculateFiveYearAvgRoe(stockId) {
+        const today = new Date();
+        const startDate = new Date(today.setFullYear(today.getFullYear() - 6)).toISOString().slice(0, 10); // 6 years for 20 quarters
+
+        const [incomeDf, balanceDf] = await Promise.all([
+            this.api.getData("TaiwanStockFinancialStatements", stockId, startDate),
+            this.api.getData("TaiwanStockBalanceSheet", stockId, startDate)
+        ]);
+        
+        if (!incomeDf || !balanceDf || incomeDf.length < 20 || balanceDf.length < 21) return [0, {}];
+
+        const sortedIncome = incomeDf.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 20);
+        const sortedBalance = balanceDf.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 21);
+        
+        if (sortedIncome.length < 20 || sortedBalance.length < 21) return [0, {}];
+
+        const annualCoreRoes = [];
+        
+        for (let i = 0; i < 20; i += 4) {
+            const annualIncome = sortedIncome.slice(i, i + 4);
+            const equitySlice = sortedBalance.slice(i, i + 5); 
+
+            if (annualIncome.length === 4 && equitySlice.length === 5) {
+                const totalOperatingIncome = annualIncome.reduce((sum, row) => sum + (row.OperatingIncome || 0), 0);
+                const avgTaxRate = annualIncome.map(row => row.tax_rate || 20).reduce((a, b) => a + b, 0) / 4;
+                const totalAfterTaxProfit = totalOperatingIncome * (1 - avgTaxRate / 100);
+
+                const equityValues = equitySlice.map(row => row.Equity || 0);
+                const avgEquity = equityValues.reduce((a, b) => a + b, 0) / equityValues.length;
+
+                if (avgEquity > 0) {
+                    const coreRoe = (totalAfterTaxProfit / avgEquity) * 100;
+                    annualCoreRoes.push(coreRoe);
+                }
+            }
+        }
+        
+        if (annualCoreRoes.length === 5) {
+            const avgRoe = annualCoreRoes.reduce((a, b) => a + b, 0) / 5;
+            const details = { avg_roe: avgRoe.toFixed(2) };
+            return [avgRoe, details];
+        }
+
+        return [0, {}];
+    }
+    
+    // C8: Branch Broker Activity (Max unique trading branches in last 60 trading days)
+    async checkBranchBrokerActivity(stockId, minHouses) {
+        const today = new Date().toISOString().slice(0, 10);
+        const startDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+        
+        // This dataset is granular and may be slow.
+        const dfBranch = await this.api.getData("TaiwanStockBrokerBranchDailyTrade", stockId, startDate, today);
+        
+        if (!dfBranch || dfBranch.length === 0) return [false, { max_houses: 0 }];
+
+        const dailyBranchCounts = {};
+
+        // Group by date to find the number of unique branches trading on that day
+        dfBranch.forEach(row => {
+            const date = row.date;
+            if (!dailyBranchCounts[date]) {
+                dailyBranchCounts[date] = new Set();
+            }
+            // Count unique broker branches by their ID
+            dailyBranchCounts[date].add(row.broker_branch); 
+        });
+
+        let maxHouses = 0;
+        let pass = false;
+        
+        // Find the maximum number of unique branches trading on any single day
+        for (const date in dailyBranchCounts) {
+            const count = dailyBranchCounts[date].size;
+            if (count > maxHouses) {
+                maxHouses = count;
+            }
+            if (count >= minHouses) {
+                pass = true;
+            }
+        }
+        
+        return [pass, { max_houses: maxHouses }];
     }
 }
 
@@ -317,8 +573,9 @@ class StockScreener {
 const api = new FinMindAPI();
 const screener = new StockScreener(api);
 let screeningInProgress = false;
-let finalResults = [];
+let finalResults = []; 
 
+// --- DOM References ---
 const startButton = document.getElementById('startButton');
 const buttonText = document.getElementById('buttonText');
 const buttonLoader = document.getElementById('buttonLoader');
@@ -327,85 +584,189 @@ const resultsBody = document.getElementById('resultsBody');
 const noResultsP = document.getElementById('noResults');
 const resultCountSpan = document.getElementById('resultCount');
 const exportButton = document.getElementById('exportButton');
-
-// DOM Elements for controls
+const apiTokenInput = document.getElementById('apiToken');
 const customStockListContainer = document.getElementById('customStockListContainer');
+const buttonIcon = document.getElementById('buttonIcon'); 
+const checkCB = document.getElementById('checkCB'); 
+const cbCriteriaCard = document.getElementById('cbCriteriaCard'); 
+const cbCriteriaStatus = document.getElementById('cbCriteriaStatus'); 
+const minRevenueYoYInput = document.getElementById('minRevenueYoY'); // New
+const minBranchBrokersInput = document.getElementById('minBranchBrokers'); // New
+const displayRevenueYoYSpan = document.getElementById('displayRevenueYoY'); // New
+const displayBranchBrokersSpan = document.getElementById('displayBranchBrokers'); // New
+
+
+// --- Helper Functions ---
+
+function updateStatus(message, isError = false) {
+    statusDiv.textContent = message;
+    statusDiv.classList.remove('bg-red-100', 'border-red-200', 'text-red-600', 'bg-indigo-100', 'border-indigo-200', 'text-gray-600', 'bg-green-100', 'border-green-200', 'text-green-700');
+    
+    if (isError) {
+        statusDiv.classList.add('bg-red-100', 'border-red-200', 'text-red-600', 'font-semibold');
+    } else if (message.includes('完成')) {
+        statusDiv.classList.add('bg-green-100', 'border-green-200', 'text-green-700', 'font-semibold');
+    } else {
+        statusDiv.classList.add('bg-indigo-100', 'border-indigo-200', 'text-gray-600');
+    }
+}
+
+function toggleUiLock(lock) {
+    screeningInProgress = lock;
+    startButton.disabled = lock;
+    apiTokenInput.disabled = lock;
+    document.getElementById('customStockList').disabled = lock;
+    document.querySelectorAll('input[name="screenMode"]').forEach(r => r.disabled = lock);
+    checkCB.disabled = lock;
+    minRevenueYoYInput.disabled = lock; // Lock new inputs
+    minBranchBrokersInput.disabled = lock; // Lock new inputs
+
+    buttonLoader.classList.toggle('hidden', !lock);
+    buttonText.textContent = lock ? '篩選中...' : '開始篩選';
+    buttonIcon.classList.toggle('hidden', lock);
+}
+
+// Function to update the appearance of the CB criteria card based on checked state
+function updateCbCardDisplay(isChecked) {
+    const label = cbCriteriaCard.querySelector('label');
+    const h3 = cbCriteriaCard.querySelector('h3');
+
+    if (isChecked) {
+        cbCriteriaCard.classList.remove('bg-white', 'border-gray-300');
+        cbCriteriaCard.classList.add('bg-indigo-100', 'border-indigo-400');
+        h3.classList.add('text-indigo-800');
+        h3.classList.remove('text-gray-800');
+        label.classList.add('text-indigo-800');
+        label.classList.remove('text-gray-800');
+        cbCriteriaStatus.textContent = "流通中 CB";
+        cbCriteriaStatus.classList.remove('text-gray-500');
+        cbCriteriaStatus.classList.add('text-indigo-600');
+    } else {
+        cbCriteriaCard.classList.remove('bg-indigo-100', 'border-indigo-400');
+        cbCriteriaCard.classList.add('bg-white', 'border-gray-300');
+        h3.classList.remove('text-indigo-800');
+        h3.classList.add('text-gray-800');
+        label.classList.remove('text-indigo-800');
+        label.classList.add('text-gray-800');
+        cbCriteriaStatus.textContent = "此條件已略過";
+        cbCriteriaStatus.classList.remove('text-indigo-600');
+        cbCriteriaStatus.classList.add('text-gray-500');
+    }
+}
+
+function addResultToTable(stockId, name, margin, roe, cumYoY, osc, maxHouses, cbStatus) {
+    const row = document.createElement('tr');
+    row.classList.add('hover:bg-indigo-50/50', 'transition-colors', 'duration-100');
+    
+    const oscColor = parseFloat(osc) > 0 ? 'text-green-600 font-semibold' : 'text-red-600';
+    
+    let cbColor;
+    if (cbStatus === '流通中') {
+        cbColor = 'text-indigo-600 font-semibold';
+    } else if (cbStatus === '未篩選') {
+        cbColor = 'text-gray-400 italic';
+    } else {
+        cbColor = 'text-gray-500';
+    }
+    
+    // Add C5 and C8 to table display
+    row.innerHTML = `
+        <td class="px-3 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${stockId}</td>
+        <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-700">${name}</td>
+        <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-700 text-right">${margin}</td>
+        <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-700 text-right">${roe}</td>
+        <td class="px-3 py-3 whitespace-nowrap text-sm text-green-600 font-medium text-right">${cumYoY}</td>
+        <td class="px-3 py-3 whitespace-nowrap text-sm text-right ${oscColor}">${osc}</td>
+        <td class="px-3 py-3 whitespace-nowrap text-sm text-yellow-600 font-medium text-right">${maxHouses}</td>
+        <td class="px-3 py-3 whitespace-nowrap text-sm ${cbColor}">${cbStatus}</td>
+    `;
+    resultsBody.appendChild(row);
+}
+
+function updateResultCount(count) {
+    resultCountSpan.textContent = `(共 ${count} 筆)`;
+}
+
+function exportToCsv() {
+    if (finalResults.length === 0) return;
+    
+    const headers = [
+        '股票代號', '股票名稱', '近四季本業淨利率(%)', '近四季本業ROE(%)', 
+        '累計月營收年增率(%)', '週MACD_OSC', '分公司家數峰值', 'CB_狀態'
+    ];
+    const rows = finalResults.map(r => [
+        r['股票代號'],
+        r['股票名稱'],
+        r['近四季本業淨利率(%)'],
+        r['近四季本業ROE(%)'],
+        r['累計月營收年增率(%)'],
+        r['週MACD_OSC'],
+        r['分公司家數峰值'],
+        r['CB_狀態']
+    ]);
+    
+    let csvContent = "\ufeff" + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    const timestamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "");
+    link.setAttribute("download", `台股八重篩選結果_${timestamp}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+// --- Event Listeners ---
+
+// Toggle custom list input visibility
 document.querySelectorAll('input[name="screenMode"]').forEach(radio => {
     radio.addEventListener('change', (event) => {
         customStockListContainer.classList.toggle('hidden', event.target.value !== 'custom');
     });
 });
 
-function updateStatus(message, isError = false) {
-    statusDiv.textContent = message;
-    statusDiv.classList.toggle('text-red-600', isError);
-    statusDiv.classList.toggle('text-gray-600', !isError);
-}
+exportButton.addEventListener('click', exportToCsv);
 
-function toggleUiLock(lock) {
-    screeningInProgress = lock;
-    startButton.disabled = lock;
-    document.getElementById('apiToken').disabled = lock;
-    document.getElementById('customStockList').disabled = lock;
-    document.querySelectorAll('input[name="screenMode"]').forEach(r => r.disabled = lock);
+// CB Checkbox Listener for visual update
+checkCB.addEventListener('change', (event) => {
+    updateCbCardDisplay(event.target.checked);
+});
 
-    buttonLoader.classList.toggle('hidden', !lock);
-    buttonText.textContent = lock ? '篩選中...' : '開始篩選';
-}
+// New input listeners for visual display update
+minRevenueYoYInput.addEventListener('input', () => {
+    displayRevenueYoYSpan.textContent = `${minRevenueYoYInput.value}%`;
+});
 
-function addResultToTable(stockId, name, margin, roe, osc) {
-    const row = document.createElement('tr');
-    row.classList.add('hover:bg-gray-50');
-    row.innerHTML = `
-        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${stockId}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${name}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${margin}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${roe}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 ${osc > 0 ? 'text-green-600' : 'text-red-600'}">${osc}</td>
-    `;
-    resultsBody.appendChild(row);
-}
+minBranchBrokersInput.addEventListener('input', () => {
+    displayBranchBrokersSpan.textContent = minBranchBrokersInput.value;
+});
 
-function updateResultCount(count) {
-    resultCountSpan.textContent = `(${count} 筆)`;
-}
 
-function exportToCsv() {
-    if (finalResults.length === 0) return;
-    
-    const headers = ['股票代號', '股票名稱', '本業稅後淨利率(%)', '本業ROE(%)', '週MACD_OSC'];
-    const rows = finalResults.map(r => [
-        r['股票代號'],
-        r['股票名稱'],
-        r['本業稅後淨利率(%)'],
-        r['本業ROE(%)'],
-        r['週MACD_OSC']
-    ]);
-    
-    let csvContent = "data:text/csv;charset=utf-8," 
-        + headers.join(",") + "\n" 
-        + rows.map(e => e.join(",")).join("\n");
-        
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    const timestamp = new Date().toISOString().slice(0, 19).replace(/[-:T]/g, "");
-    link.setAttribute("download", `stock_screening_results_${timestamp}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
+// Initialize UI
+updateCbCardDisplay(checkCB.checked);
+displayRevenueYoYSpan.textContent = `${minRevenueYoYInput.value}%`;
+displayBranchBrokersSpan.textContent = minBranchBrokersInput.value;
+updateResultCount(0);
 
 
 startButton.addEventListener('click', async () => {
     if (screeningInProgress) return;
     
-    const token = document.getElementById('apiToken').value;
+    const token = apiTokenInput.value;
     if (!token) {
-        updateStatus("請先輸入您的 FinMind API Token。", true);
+        updateStatus("⚠️ 請先輸入您的 FinMind API Token 才能開始篩選。", true);
         return;
     }
     
+    // Get user inputs
+    const targetYoY = parseFloat(minRevenueYoYInput.value) || 0;
+    const targetMinHouses = parseInt(minBranchBrokersInput.value) || 300;
+    
+    // Reset UI state
     toggleUiLock(true);
     resultsBody.innerHTML = '';
     noResultsP.classList.add('hidden');
@@ -417,61 +778,127 @@ startButton.addEventListener('click', async () => {
     
     let stockList;
     const screenMode = document.querySelector('input[name="screenMode"]:checked').value;
+    const shouldCheckCB = checkCB.checked;
 
     if (screenMode === 'custom') {
         const customText = document.getElementById('customStockList').value.trim();
         if (!customText) {
-            updateStatus("請在指定列表模式下輸入股票代碼。", true);
+            updateStatus("⚠️ 請在指定列表模式下輸入股票代碼。", true);
             toggleUiLock(false);
             return;
         }
-        stockList = customText.split(/[\s,，\n]+/).filter(Boolean);
+        stockList = customText.split(/[\s,，\n]+/)
+                              .map(s => s.trim())
+                              .filter(Boolean)
+                              .filter(s => /^\d+$/.test(s));
     } else {
-        updateStatus("正在獲取所有上市公司列表...");
-        stockList = await screener.getStockList();
+        updateStatus("🚀 正在獲取所有上市公司列表 (排除金融保險業、建材營造)...");
+        try {
+             await screener.initialize();
+             stockList = await screener.getStockList();
+        } catch (e) {
+            updateStatus("無法獲取股票列表。請檢查 Token 或網路連線。", true);
+            toggleUiLock(false);
+            return;
+        }
+
         if(stockList.length === 0) {
-            updateStatus("無法獲取股票列表，請檢查 Token 或網路連線。", true);
+            updateStatus("🚫 無法獲取股票列表或列表為空，請檢查 Token 或網路連線。", true);
             toggleUiLock(false);
             return;
         }
     }
     
-    updateStatus(`準備篩選 ${stockList.length} 支股票...`);
-    await screener.initialize();
+    updateStatus(`✅ 準備篩選 ${stockList.length} 支股票...`);
 
     let passedCount = 0;
-    for (let i = 0; i < stockList.length; i++) {
-        const stockId = stockList[i];
-        updateStatus(`處理中: ${stockId} (${i + 1}/${stockList.length})`);
+    const TOTAL_STOCKS = stockList.length;
 
+    for (let i = 0; i < TOTAL_STOCKS; i++) {
+        const stockId = stockList[i];
+        
         try {
+            // --- 1. C1: Profit Margin Check ---
+            updateStatus(`🔍 處理中: ${stockId} (1/8 - 獲利能力)`);
             const [profitMargin, marginDetails] = await screener.calculateCoreProfitMargin(stockId);
             if (profitMargin <= 10) continue;
 
+            // --- 2. C2: ROE Check ---
+            updateStatus(`🔍 處理中: ${stockId} (2/8 - 經營效率)`);
             const [coreRoe, roeDetails] = await screener.calculateCoreRoe(stockId);
             if (coreRoe <= 15) continue;
             
+            // --- 3. C3: MACD Check ---
+            updateStatus(`🔍 處理中: ${stockId} (3/8 - 上漲動能)`);
             const [macdPass, macdDetails] = await screener.calculateMacdWeekly(stockId);
             if (!macdPass) continue;
             
-            // All conditions passed
+            // --- 4. C5: Cumulative Revenue YoY Check ---
+            updateStatus(`🔍 處理中: ${stockId} (4/8 - 累計營收動能)`);
+            const [cumYoY, cumYoYDetails] = await screener.calculateCumulativeRevenueYoY(stockId);
+            if (cumYoY < targetYoY) continue;
+
+            // --- 5. C6: 5-Year FCF Check ---
+            updateStatus(`🔍 處理中: ${stockId} (5/8 - 長期自由金流)`);
+            const [fcfPass, fcfDetails] = await screener.calculateFiveYearFCF(stockId);
+            if (!fcfPass) continue;
+
+            // --- 6. C7: 5-Year Average ROE Check ---
+            updateStatus(`🔍 處理中: ${stockId} (6/8 - 長期平均ROE)`);
+            const [avgRoe, avgRoeDetails] = await screener.calculateFiveYearAvgRoe(stockId);
+            if (avgRoe < 10) continue; 
+
+            // --- 7. C8: Branch Broker Activity Check ---
+            updateStatus(`🔍 處理中: ${stockId} (7/8 - 分公司交易家數)`);
+            const [brokerPass, brokerDetails] = await screener.checkBranchBrokerActivity(stockId, targetMinHouses);
+            if (!brokerPass) continue;
+            
+            // --- 8. C4: Convertible Bond Check (Optional) ---
+            let cbDetails = { status: "未篩選" }; 
+
+            if (shouldCheckCB) {
+                updateStatus(`🔍 處理中: ${stockId} (8/8 - 可轉債狀態)`);
+                const [cbPass, details] = await screener.checkConvertibleBond(stockId);
+                cbDetails = details;
+                
+                if (!cbPass) continue;
+            }
+            
+            // All conditions passed (or optionally passed)
             passedCount++;
             const stockName = screener.getStockName(stockId);
-            addResultToTable(stockId, stockName, marginDetails.average, roeDetails.core_roe, macdDetails.osc);
+            const oscValue = parseFloat(macdDetails.osc);
+
+            addResultToTable(
+                stockId, 
+                stockName, 
+                marginDetails.average, 
+                roeDetails.core_roe, 
+                cumYoYDetails.yoy,
+                oscValue.toFixed(4),
+                brokerDetails.max_houses,
+                cbDetails.status
+            );
+
+            // Store for CSV export
             finalResults.push({
                 '股票代號': stockId,
                 '股票名稱': stockName,
-                '本業稅後淨利率(%)': marginDetails.average,
-                '本業ROE(%)': roeDetails.core_roe,
-                '週MACD_OSC': macdDetails.osc,
+                '近四季本業淨利率(%)': marginDetails.average,
+                '近四季本業ROE(%)': roeDetails.core_roe,
+                '累計月營收年增率(%)': cumYoYDetails.yoy,
+                '週MACD_OSC': oscValue.toFixed(4),
+                '分公司家數峰值': brokerDetails.max_houses,
+                'CB_狀態': cbDetails.status,
             });
             updateResultCount(passedCount);
 
         } catch (error) {
-            console.error(`處理 ${stockId} 時發生錯誤:`, error);
+            console.error(`處理 ${stockId} 時發生未預期錯誤:`, error);
         }
 
-        await new Promise(resolve => setTimeout(resolve, 600)); // Rate limit
+        // Add a deliberate slight delay between stock checks to respect overall API limits
+        await new Promise(resolve => setTimeout(resolve, 300)); 
     }
 
     if (passedCount === 0) {
@@ -480,11 +907,10 @@ startButton.addEventListener('click', async () => {
         exportButton.classList.remove('hidden');
     }
 
-    updateStatus(`篩選完成！共找到 ${passedCount} 支符合條件的股票。`);
+    const filterCount = shouldCheckCB ? '八重' : '七重';
+    updateStatus(`🎉 篩選完成！共找到 ${passedCount} 支符合${filterCount}條件的股票。`);
     toggleUiLock(false);
 });
-
-exportButton.addEventListener('click', exportToCsv);
 
 </script>
 </body>
