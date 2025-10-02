@@ -1,273 +1,491 @@
-
-台股三重篩選系統
-整合三個選股條件
-1. 近四季本業稅後淨利率平均  10%
-2. 近四季本業ROE  15%
-3. 週線MACD紅柱 (OSC  0)
-
-
-import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
-import requests
-import time
-from typing import List, Dict, Tuple
-
-class FinMindAPI
-    FinMind API 封裝類別
-    
-    def __init__(self, token str = )
-        self.base_url = httpsapi.finmindtrade.comapiv4data
-        self.token = token
-    
-    def get_data(self, dataset str, data_id str = , start_date str = , end_date str = ) - pd.DataFrame
-        取得FinMind資料
-        params = {
-            dataset dataset,
-            data_id data_id,
-            start_date start_date,
-            end_date end_date,
-            token self.token
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台股三重篩選系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
         }
-        
-        try
-            response = requests.get(self.base_url, params=params)
-            data = response.json()
-            if data[status] == 200
-                return pd.DataFrame(data[data])
-            else
-                print(fAPI錯誤 {data.get('msg', 'Unknown error')})
-                return pd.DataFrame()
-        except Exception as e
-            print(f請求失敗 {str(e)})
-            return pd.DataFrame()
-
-class StockScreener
-    股票篩選器
-    
-    def __init__(self, api FinMindAPI)
-        self.api = api
-    
-    def get_stock_list(self) - List[str]
-        取得台股股票代碼列表
-        df = self.api.get_data(TaiwanStockInfo)
-        if not df.empty
-            # 過濾掉ETF、特別股等
-            df = df[df['type'] == 'twse']
-            return df['stock_id'].tolist()
-        return []
-    
-    def calculate_core_profit_margin(self, stock_id str) - Tuple[float, Dict]
-        
-        計算近四季本業稅後淨利率平均
-        本業稅後淨利率 = (營業利益 × (1 - 有效稅率))  營收
-        
-        # 取得財報資料
-        end_date = datetime.now().strftime(%Y-%m-%d)
-        start_date = (datetime.now() - timedelta(days=730)).strftime(%Y-%m-%d)
-        
-        df = self.api.get_data(TaiwanStockFinancialStatements, stock_id, start_date, end_date)
-        
-        if df.empty or len(df)  4
-            return 0, {}
-        
-        # 排序並取最近四季
-        df = df.sort_values('date', ascending=False).head(4)
-        
-        quarterly_margins = []
-        details = {quarters []}
-        
-        for _, row in df.iterrows()
-            operating_income = row.get('OperatingIncome', 0)
-            revenue = row.get('Revenue', 0)
-            tax_rate = row.get('tax_rate', 20)  # 預設稅率20%
-            
-            if revenue  0
-                after_tax_profit = operating_income  (1 - tax_rate  100)
-                margin = (after_tax_profit  revenue)  100
-                quarterly_margins.append(margin)
-                
-                details[quarters].append({
-                    date row['date'],
-                    margin round(margin, 2)
-                })
-        
-        if quarterly_margins
-            avg_margin = np.mean(quarterly_margins)
-            details[average] = round(avg_margin, 2)
-            return avg_margin, details
-        
-        return 0, {}
-    
-    def calculate_core_roe(self, stock_id str) - Tuple[float, Dict]
-        
-        計算近四季本業ROE
-        本業ROE = (營業利益 × (1 - 有效稅率))  平均股東權益
-        
-        end_date = datetime.now().strftime(%Y-%m-%d)
-        start_date = (datetime.now() - timedelta(days=730)).strftime(%Y-%m-%d)
-        
-        # 取得損益表資料
-        income_df = self.api.get_data(TaiwanStockFinancialStatements, stock_id, start_date, end_date)
-        # 取得資產負債表資料
-        balance_df = self.api.get_data(TaiwanStockBalanceSheet, stock_id, start_date, end_date)
-        
-        if income_df.empty or balance_df.empty or len(income_df)  4 or len(balance_df)  5
-            return 0, {}
-        
-        # 排序資料
-        income_df = income_df.sort_values('date', ascending=False).head(4)
-        balance_df = balance_df.sort_values('date', ascending=False).head(5)
-        
-        # 計算四季稅後本業淨利總和
-        total_after_tax_profit = 0
-        for _, row in income_df.iterrows()
-            operating_income = row.get('OperatingIncome', 0)
-            tax_rate = row.get('tax_rate', 20)
-            after_tax_profit = operating_income  (1 - tax_rate  100)
-            total_after_tax_profit += after_tax_profit
-        
-        # 計算平均股東權益
-        equity_values = balance_df['Equity'].head(5).tolist()
-        avg_equity = np.mean(equity_values) if equity_values else 0
-        
-        if avg_equity  0
-            core_roe = (total_after_tax_profit  avg_equity)  100
-            details = {
-                core_roe round(core_roe, 2),
-                total_profit round(total_after_tax_profit, 2),
-                avg_equity round(avg_equity, 2)
+        .loader {
+            border-top-color: #3498db;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
             }
-            return core_roe, details
-        
-        return 0, {}
+        }
+        /* For table sticky header */
+        .table-container {
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        thead th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-7xl bg-white rounded-2xl shadow-lg p-6 md:p-8 space-y-6">
+        <!-- Header -->
+        <div class="text-center">
+            <h1 class="text-3xl font-bold text-gray-900">台股三重篩選系統</h1>
+            <p class="text-gray-500 mt-2">整合三大條件，篩選優質潛力股</p>
+        </div>
+
+        <!-- Screening Criteria -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h3 class="font-semibold text-lg text-indigo-600">優良獲利能力</h3>
+                <p class="text-sm text-gray-600 mt-1">近四季本業稅後淨利率 > 10%</p>
+            </div>
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h3 class="font-semibold text-lg text-indigo-600">高效經營效率</h3>
+                <p class="text-sm text-gray-600 mt-1">近四季本業 ROE > 15%</p>
+            </div>
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h3 class="font-semibold text-lg text-indigo-600">強勁上漲動能</h3>
+                <p class="text-sm text-gray-600 mt-1">週線 MACD > 0 (紅柱)</p>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="bg-white p-4 rounded-lg space-y-4">
+            <div>
+                <label for="apiToken" class="block text-sm font-medium text-gray-700 mb-1">FinMind API Token</label>
+                <input type="password" id="apiToken" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="請在此貼上您的 Token (建議申請免費Token)">
+                <p class="text-xs text-gray-500 mt-1">前往 <a href="https://finmindtrade.com/" target="_blank" class="text-indigo-500 hover:underline">FinMind</a> 官網申請免費 Token。</p>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center">
+                    <input type="radio" id="screenAll" name="screenMode" value="all" class="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500" checked>
+                    <label for="screenAll" class="ml-2 block text-sm text-gray-900">篩選整個市場</label>
+                </div>
+                <div class="flex items-center">
+                    <input type="radio" id="screenCustom" name="screenMode" value="custom" class="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500">
+                    <label for="screenCustom" class="ml-2 block text-sm text-gray-900">篩選指定列表</label>
+                </div>
+            </div>
+
+            <div id="customStockListContainer" class="hidden">
+                <label for="customStockList" class="block text-sm font-medium text-gray-700 mb-1">股票代碼列表</label>
+                <textarea id="customStockList" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="請輸入股票代碼，以逗號、空格或換行分隔&#10;例如: 2330, 2317, 2454"></textarea>
+            </div>
+
+            <div>
+                <button id="startButton" class="w-full bg-indigo-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center">
+                    <svg id="buttonIcon" class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                    </svg>
+                    <span id="buttonText">開始篩選</span>
+                    <div id="buttonLoader" class="loader h-5 w-5 rounded-full border-2 border-t-2 border-gray-200 ml-2 hidden"></div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Status & Results -->
+        <div>
+            <div id="status" class="text-sm text-gray-600 p-3 bg-gray-50 rounded-md min-h-[40px] flex items-center">請點擊 "開始篩選" 按鈕。</div>
+            <div id="resultsContainer" class="mt-4">
+                 <div class="flex justify-between items-center mb-2">
+                    <h2 class="text-xl font-semibold">篩選結果 <span id="resultCount" class="text-base font-normal text-gray-500"></span></h2>
+                    <button id="exportButton" class="hidden bg-green-600 text-white text-sm font-semibold py-2 px-3 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                        匯出 CSV
+                    </button>
+                 </div>
+                <div class="table-container border border-gray-200 rounded-lg">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">股票代號</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">股票名稱</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">本業淨利率(%)</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">本業ROE(%)</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">週 MACD OSC</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsBody" class="bg-white divide-y divide-gray-200">
+                            <!-- Results will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+                 <p id="noResults" class="text-center text-gray-500 py-8 hidden">沒有符合條件的股票。</p>
+            </div>
+        </div>
+    </div>
+
+<script>
+// --- Classes & Main Logic ---
+
+class FinMindAPI {
+    constructor(token = "") {
+        this.baseUrl = "https://api.finmindtrade.com/api/v4/data";
+        this.token = token;
+    }
+
+    setToken(token) {
+        this.token = token;
+    }
+
+    async getData(dataset, data_id = "", start_date = "", end_date = "") {
+        const params = new URLSearchParams({
+            dataset,
+            data_id,
+            start_date,
+            end_date,
+            token: this.token
+        });
+
+        try {
+            const response = await fetch(`${this.baseUrl}?${params.toString()}`);
+            if (!response.ok) {
+                throw new Error(`HTTP 錯誤! 狀態: ${response.status}`);
+            }
+            const data = await response.json();
+            if (data.status === 200) {
+                return data.data;
+            } else {
+                console.error(`API 錯誤 (${data_id}):`, data.msg);
+                updateStatus(`API 錯誤 (${data_id}): ${data.msg}`, true);
+                return [];
+            }
+        } catch (error) {
+            console.error(`請求失敗 (${data_id}):`, error);
+            updateStatus(`請求失敗 (${data_id}): ${error.message}`, true);
+            return [];
+        }
+    }
+}
+
+class StockScreener {
+    constructor(api) {
+        this.api = api;
+        this.stockInfo = [];
+    }
     
-    def calculate_macd_weekly(self, stock_id str) - Tuple[bool, Dict]
+    async initialize() {
+        const stockInfoData = await this.api.getData("TaiwanStockInfo");
+        if (stockInfoData.length > 0) {
+            this.stockInfo = stockInfoData;
+        }
+    }
+
+    getStockName(stockId) {
+        const stock = this.stockInfo.find(s => s.stock_id === stockId);
+        return stock ? stock.stock_name : 'N/A';
+    }
+
+    async getStockList() {
+        if (this.stockInfo.length === 0) await this.initialize();
+        return this.stockInfo
+            .filter(s => s.type === 'twse' && !["金融保險業", "建材營造"].includes(s.industry_category))
+            .map(s => s.stock_id);
+    }
+
+    async calculateCoreProfitMargin(stockId) {
+        const endDate = new Date().toISOString().slice(0, 10);
+        const startDate = new Date(Date.now() - 730 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
         
-        計算週線MACD
-        檢查OSC (柱狀體)  0
+        const df = await this.api.getData("TaiwanStockFinancialStatements", stockId, startDate, endDate);
         
-        end_date = datetime.now().strftime(%Y-%m-%d)
-        start_date = (datetime.now() - timedelta(days=365)).strftime(%Y-%m-%d)
-        
-        # 取得日線資料
-        df = self.api.get_data(TaiwanStockPrice, stock_id, start_date, end_date)
-        
-        if df.empty
-            return False, {}
-        
-        # 轉換為週線
-        df['date'] = pd.to_datetime(df['date'])
-        df.set_index('date', inplace=True)
-        weekly_df = df['close'].resample('W').last().dropna()
-        
-        if len(weekly_df)  26
-            return False, {}
-        
-        # 計算MACD
-        ema_12 = weekly_df.ewm(span=12, adjust=False).mean()
-        ema_26 = weekly_df.ewm(span=26, adjust=False).mean()
-        dif = ema_12 - ema_26
-        dem = dif.ewm(span=9, adjust=False).mean()
-        osc = dif - dem
-        
-        # 取最新值
-        latest_osc = osc.iloc[-1]
-        latest_dif = dif.iloc[-1]
-        latest_dem = dem.iloc[-1]
-        
-        details = {
-            osc round(latest_osc, 4),
-            dif round(latest_dif, 4),
-            dem round(latest_dem, 4),
-            date weekly_df.index[-1].strftime(%Y-%m-%d)
+        if (!df || df.length < 4 || !df[0].hasOwnProperty('OperatingIncome')) return [0, {}];
+
+        const sortedDf = df.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 4);
+
+        const quarterlyMargins = [];
+        const details = { quarters: [] };
+
+        for (const row of sortedDf) {
+            const operatingIncome = row.OperatingIncome || 0;
+            const revenue = row.Revenue || 0;
+            const taxRate = row.tax_rate || 20;
+
+            if (revenue > 0) {
+                const afterTaxProfit = operatingIncome * (1 - taxRate / 100);
+                const margin = (afterTaxProfit / revenue) * 100;
+                quarterlyMargins.push(margin);
+                details.quarters.push({ date: row.date, margin: margin.toFixed(2) });
+            }
+        }
+
+        if (quarterlyMargins.length > 0) {
+            const avgMargin = quarterlyMargins.reduce((a, b) => a + b, 0) / quarterlyMargins.length;
+            details.average = avgMargin.toFixed(2);
+            return [avgMargin, details];
         }
         
-        return latest_osc  0, details
+        return [0, {}];
+    }
     
-    def screen_stocks(self, stock_list List[str] = None) - pd.DataFrame
-        執行三重篩選
-        if stock_list is None
-            stock_list = self.get_stock_list()
+    async calculateCoreRoe(stockId) {
+        const endDate = new Date().toISOString().slice(0, 10);
+        const startDate = new Date(Date.now() - 730 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+        const [incomeDf, balanceDf] = await Promise.all([
+            this.api.getData("TaiwanStockFinancialStatements", stockId, startDate, endDate),
+            this.api.getData("TaiwanStockBalanceSheet", stockId, startDate, endDate)
+        ]);
         
-        results = []
-        total = len(stock_list)
+        if (!incomeDf || !balanceDf || incomeDf.length < 4 || balanceDf.length < 5) return [0, {}];
+
+        const sortedIncome = incomeDf.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 4);
+        const sortedBalance = balanceDf.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+
+        const totalOperatingIncome = sortedIncome.reduce((sum, row) => sum + (row.OperatingIncome || 0), 0);
+        const taxRates = sortedIncome.map(row => row.tax_rate || 20);
+        const avgTaxRate = taxRates.reduce((a, b) => a + b, 0) / taxRates.length;
         
-        print(f開始篩選 {total} 支股票...)
+        const totalAfterTaxProfit = totalOperatingIncome * (1 - avgTaxRate / 100);
+
+        const equityValues = sortedBalance.map(row => row.Equity || 0);
+        const avgEquity = equityValues.reduce((a, b) => a + b, 0) / equityValues.length;
+
+        if (avgEquity > 0) {
+            const coreRoe = (totalAfterTaxProfit / avgEquity) * 100;
+            const details = {
+                core_roe: coreRoe.toFixed(2),
+                total_profit: totalAfterTaxProfit.toFixed(2),
+                avg_equity: avgEquity.toFixed(2)
+            };
+            return [coreRoe, details];
+        }
+
+        return [0, {}];
+    }
+
+    async calculateMacdWeekly(stockId) {
+        const endDate = new Date().toISOString().slice(0, 10);
+        const startDate = new Date(Date.now() - 540 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
         
-        for idx, stock_id in enumerate(stock_list, 1)
-            print(f處理中 {stock_id} ({idx}{total}))
+        const df = await this.api.getData("TaiwanStockPrice", stockId, startDate, endDate);
+        
+        if (!df || df.length < 100) return [false, {}];
+
+        // Resample to weekly data
+        const weeklyData = {};
+        df.forEach(row => {
+            const date = new Date(row.date);
+            const dayOfWeek = date.getDay();
+            const friday = new Date(date);
+            friday.setDate(date.getDate() - dayOfWeek + 5);
+            weeklyData[friday.toISOString().slice(0, 10)] = parseFloat(row.close);
+        });
+
+        const weeklyCloses = Object.keys(weeklyData).sort().map(key => weeklyData[key]);
+
+        if (weeklyCloses.length < 35) return [false, {}];
+        
+        // Calculate MACD
+        const calculateEma = (data, span) => {
+            const k = 2 / (span + 1);
+            let ema = [data[0]];
+            for (let i = 1; i < data.length; i++) {
+                ema.push(data[i] * k + ema[i - 1] * (1 - k));
+            }
+            return ema;
+        };
+
+        const ema12 = calculateEma(weeklyCloses, 12);
+        const ema26 = calculateEma(weeklyCloses, 26);
+        const dif = ema12.map((val, i) => val - ema26[i]);
+        const dem = calculateEma(dif, 9);
+        const osc = dif.map((val, i) => (val - dem[i]) * 2); // FinMind OSC definition
+
+        const latestOsc = osc[osc.length - 1];
+
+        const details = {
+            osc: latestOsc.toFixed(4),
+            dif: dif[dif.length - 1].toFixed(4),
+            dem: dem[dem.length - 1].toFixed(4),
+            date: Object.keys(weeklyData).sort().pop()
+        };
+
+        return [latestOsc > 0, details];
+    }
+}
+
+// --- UI Logic & Event Handlers ---
+
+const api = new FinMindAPI();
+const screener = new StockScreener(api);
+let screeningInProgress = false;
+let finalResults = [];
+
+const startButton = document.getElementById('startButton');
+const buttonText = document.getElementById('buttonText');
+const buttonLoader = document.getElementById('buttonLoader');
+const statusDiv = document.getElementById('status');
+const resultsBody = document.getElementById('resultsBody');
+const noResultsP = document.getElementById('noResults');
+const resultCountSpan = document.getElementById('resultCount');
+const exportButton = document.getElementById('exportButton');
+
+// DOM Elements for controls
+const customStockListContainer = document.getElementById('customStockListContainer');
+document.querySelectorAll('input[name="screenMode"]').forEach(radio => {
+    radio.addEventListener('change', (event) => {
+        customStockListContainer.classList.toggle('hidden', event.target.value !== 'custom');
+    });
+});
+
+function updateStatus(message, isError = false) {
+    statusDiv.textContent = message;
+    statusDiv.classList.toggle('text-red-600', isError);
+    statusDiv.classList.toggle('text-gray-600', !isError);
+}
+
+function toggleUiLock(lock) {
+    screeningInProgress = lock;
+    startButton.disabled = lock;
+    document.getElementById('apiToken').disabled = lock;
+    document.getElementById('customStockList').disabled = lock;
+    document.querySelectorAll('input[name="screenMode"]').forEach(r => r.disabled = lock);
+
+    buttonLoader.classList.toggle('hidden', !lock);
+    buttonText.textContent = lock ? '篩選中...' : '開始篩選';
+}
+
+function addResultToTable(stockId, name, margin, roe, osc) {
+    const row = document.createElement('tr');
+    row.classList.add('hover:bg-gray-50');
+    row.innerHTML = `
+        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${stockId}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${name}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${margin}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${roe}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 ${osc > 0 ? 'text-green-600' : 'text-red-600'}">${osc}</td>
+    `;
+    resultsBody.appendChild(row);
+}
+
+function updateResultCount(count) {
+    resultCountSpan.textContent = `(${count} 筆)`;
+}
+
+function exportToCsv() {
+    if (finalResults.length === 0) return;
+    
+    const headers = ['股票代號', '股票名稱', '本業稅後淨利率(%)', '本業ROE(%)', '週MACD_OSC'];
+    const rows = finalResults.map(r => [
+        r['股票代號'],
+        r['股票名稱'],
+        r['本業稅後淨利率(%)'],
+        r['本業ROE(%)'],
+        r['週MACD_OSC']
+    ]);
+    
+    let csvContent = "data:text/csv;charset=utf-8," 
+        + headers.join(",") + "\n" 
+        + rows.map(e => e.join(",")).join("\n");
+        
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/[-:T]/g, "");
+    link.setAttribute("download", `stock_screening_results_${timestamp}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+
+startButton.addEventListener('click', async () => {
+    if (screeningInProgress) return;
+    
+    const token = document.getElementById('apiToken').value;
+    if (!token) {
+        updateStatus("請先輸入您的 FinMind API Token。", true);
+        return;
+    }
+    
+    toggleUiLock(true);
+    resultsBody.innerHTML = '';
+    noResultsP.classList.add('hidden');
+    exportButton.classList.add('hidden');
+    updateResultCount(0);
+    finalResults = [];
+    
+    api.setToken(token);
+    
+    let stockList;
+    const screenMode = document.querySelector('input[name="screenMode"]:checked').value;
+
+    if (screenMode === 'custom') {
+        const customText = document.getElementById('customStockList').value.trim();
+        if (!customText) {
+            updateStatus("請在指定列表模式下輸入股票代碼。", true);
+            toggleUiLock(false);
+            return;
+        }
+        stockList = customText.split(/[\s,，\n]+/).filter(Boolean);
+    } else {
+        updateStatus("正在獲取所有上市公司列表...");
+        stockList = await screener.getStockList();
+        if(stockList.length === 0) {
+            updateStatus("無法獲取股票列表，請檢查 Token 或網路連線。", true);
+            toggleUiLock(false);
+            return;
+        }
+    }
+    
+    updateStatus(`準備篩選 ${stockList.length} 支股票...`);
+    await screener.initialize();
+
+    let passedCount = 0;
+    for (let i = 0; i < stockList.length; i++) {
+        const stockId = stockList[i];
+        updateStatus(`處理中: ${stockId} (${i + 1}/${stockList.length})`);
+
+        try {
+            const [profitMargin, marginDetails] = await screener.calculateCoreProfitMargin(stockId);
+            if (profitMargin <= 10) continue;
+
+            const [coreRoe, roeDetails] = await screener.calculateCoreRoe(stockId);
+            if (coreRoe <= 15) continue;
             
-            try
-                # 條件1 本業稅後淨利率  10%
-                profit_margin, margin_details = self.calculate_core_profit_margin(stock_id)
-                
-                # 條件2 本業ROE  15%
-                core_roe, roe_details = self.calculate_core_roe(stock_id)
-                
-                # 條件3 週線MACD紅柱
-                macd_pass, macd_details = self.calculate_macd_weekly(stock_id)
-                
-                # 判斷是否通過篩選
-                pass_condition1 = profit_margin  10
-                pass_condition2 = core_roe  15
-                pass_condition3 = macd_pass
-                
-                all_pass = pass_condition1 and pass_condition2 and pass_condition3
-                
-                results.append({
-                    股票代號 stock_id,
-                    本業稅後淨利率(%) margin_details.get(average, 0),
-                    本業ROE(%) roe_details.get(core_roe, 0),
-                    週MACD_OSC macd_details.get(osc, 0),
-                    條件1_淨利率10% ✓ if pass_condition1 else ✗,
-                    條件2_ROE15% ✓ if pass_condition2 else ✗,
-                    條件3_MACD紅柱 ✓ if pass_condition3 else ✗,
-                    全部通過 ✓ if all_pass else ✗
-                })
-                
-                # 避免API請求過於頻繁
-                time.sleep(0.5)
-                
-            except Exception as e
-                print(f處理 {stock_id} 時發生錯誤 {str(e)})
-                continue
-        
-        df_results = pd.DataFrame(results)
-        return df_results
+            const [macdPass, macdDetails] = await screener.calculateMacdWeekly(stockId);
+            if (!macdPass) continue;
+            
+            // All conditions passed
+            passedCount++;
+            const stockName = screener.getStockName(stockId);
+            addResultToTable(stockId, stockName, marginDetails.average, roeDetails.core_roe, macdDetails.osc);
+            finalResults.push({
+                '股票代號': stockId,
+                '股票名稱': stockName,
+                '本業稅後淨利率(%)': marginDetails.average,
+                '本業ROE(%)': roeDetails.core_roe,
+                '週MACD_OSC': macdDetails.osc,
+            });
+            updateResultCount(passedCount);
 
-def main()
-    主程式
-    # 初始化API (如有token請填入)
-    api = FinMindAPI(token=)
-    
-    # 建立篩選器
-    screener = StockScreener(api)
-    
-    # 測試用股票列表 (可改為完整列表)
-    test_stocks = [2330, 2317, 2454, 3008, 2912]
-    
-    # 執行篩選
-    results = screener.screen_stocks(test_stocks)
-    
-    # 儲存結果
-    timestamp = datetime.now().strftime(%Y%m%d_%H%M%S)
-    filename = fstock_screening_results_{timestamp}.csv
-    results.to_csv(filename, index=False, encoding='utf-8-sig')
-    
-    print(n + =80)
-    print(篩選完成！)
-    print(=80)
-    print(results.to_string())
-    print(fn結果已儲存至 {filename})
-    
-    # 顯示通過所有條件的股票
-    passed_stocks = results[results[全部通過] == ✓]
-    if not passed_stocks.empty
-        print(n通過所有條件的股票)
-        print(passed_stocks[[股票代號, 本業稅後淨利率(%), 本業ROE(%), 週MACD_OSC]])
-    else
-        print(n沒有股票通過所有條件)
+        } catch (error) {
+            console.error(`處理 ${stockId} 時發生錯誤:`, error);
+        }
 
-if __name__ == __main__
-    main()
+        await new Promise(resolve => setTimeout(resolve, 600)); // Rate limit
+    }
+
+    if (passedCount === 0) {
+        noResultsP.classList.remove('hidden');
+    } else {
+        exportButton.classList.remove('hidden');
+    }
+
+    updateStatus(`篩選完成！共找到 ${passedCount} 支符合條件的股票。`);
+    toggleUiLock(false);
+});
+
+exportButton.addEventListener('click', exportToCsv);
+
+</script>
+</body>
+</html>
