@@ -1,0 +1,273 @@
+
+台股三重篩選系統
+整合三個選股條件
+1. 近四季本業稅後淨利率平均  10%
+2. 近四季本業ROE  15%
+3. 週線MACD紅柱 (OSC  0)
+
+
+import pandas as pd
+import numpy as np
+from datetime import datetime, timedelta
+import requests
+import time
+from typing import List, Dict, Tuple
+
+class FinMindAPI
+    FinMind API 封裝類別
+    
+    def __init__(self, token str = )
+        self.base_url = httpsapi.finmindtrade.comapiv4data
+        self.token = token
+    
+    def get_data(self, dataset str, data_id str = , start_date str = , end_date str = ) - pd.DataFrame
+        取得FinMind資料
+        params = {
+            dataset dataset,
+            data_id data_id,
+            start_date start_date,
+            end_date end_date,
+            token self.token
+        }
+        
+        try
+            response = requests.get(self.base_url, params=params)
+            data = response.json()
+            if data[status] == 200
+                return pd.DataFrame(data[data])
+            else
+                print(fAPI錯誤 {data.get('msg', 'Unknown error')})
+                return pd.DataFrame()
+        except Exception as e
+            print(f請求失敗 {str(e)})
+            return pd.DataFrame()
+
+class StockScreener
+    股票篩選器
+    
+    def __init__(self, api FinMindAPI)
+        self.api = api
+    
+    def get_stock_list(self) - List[str]
+        取得台股股票代碼列表
+        df = self.api.get_data(TaiwanStockInfo)
+        if not df.empty
+            # 過濾掉ETF、特別股等
+            df = df[df['type'] == 'twse']
+            return df['stock_id'].tolist()
+        return []
+    
+    def calculate_core_profit_margin(self, stock_id str) - Tuple[float, Dict]
+        
+        計算近四季本業稅後淨利率平均
+        本業稅後淨利率 = (營業利益 × (1 - 有效稅率))  營收
+        
+        # 取得財報資料
+        end_date = datetime.now().strftime(%Y-%m-%d)
+        start_date = (datetime.now() - timedelta(days=730)).strftime(%Y-%m-%d)
+        
+        df = self.api.get_data(TaiwanStockFinancialStatements, stock_id, start_date, end_date)
+        
+        if df.empty or len(df)  4
+            return 0, {}
+        
+        # 排序並取最近四季
+        df = df.sort_values('date', ascending=False).head(4)
+        
+        quarterly_margins = []
+        details = {quarters []}
+        
+        for _, row in df.iterrows()
+            operating_income = row.get('OperatingIncome', 0)
+            revenue = row.get('Revenue', 0)
+            tax_rate = row.get('tax_rate', 20)  # 預設稅率20%
+            
+            if revenue  0
+                after_tax_profit = operating_income  (1 - tax_rate  100)
+                margin = (after_tax_profit  revenue)  100
+                quarterly_margins.append(margin)
+                
+                details[quarters].append({
+                    date row['date'],
+                    margin round(margin, 2)
+                })
+        
+        if quarterly_margins
+            avg_margin = np.mean(quarterly_margins)
+            details[average] = round(avg_margin, 2)
+            return avg_margin, details
+        
+        return 0, {}
+    
+    def calculate_core_roe(self, stock_id str) - Tuple[float, Dict]
+        
+        計算近四季本業ROE
+        本業ROE = (營業利益 × (1 - 有效稅率))  平均股東權益
+        
+        end_date = datetime.now().strftime(%Y-%m-%d)
+        start_date = (datetime.now() - timedelta(days=730)).strftime(%Y-%m-%d)
+        
+        # 取得損益表資料
+        income_df = self.api.get_data(TaiwanStockFinancialStatements, stock_id, start_date, end_date)
+        # 取得資產負債表資料
+        balance_df = self.api.get_data(TaiwanStockBalanceSheet, stock_id, start_date, end_date)
+        
+        if income_df.empty or balance_df.empty or len(income_df)  4 or len(balance_df)  5
+            return 0, {}
+        
+        # 排序資料
+        income_df = income_df.sort_values('date', ascending=False).head(4)
+        balance_df = balance_df.sort_values('date', ascending=False).head(5)
+        
+        # 計算四季稅後本業淨利總和
+        total_after_tax_profit = 0
+        for _, row in income_df.iterrows()
+            operating_income = row.get('OperatingIncome', 0)
+            tax_rate = row.get('tax_rate', 20)
+            after_tax_profit = operating_income  (1 - tax_rate  100)
+            total_after_tax_profit += after_tax_profit
+        
+        # 計算平均股東權益
+        equity_values = balance_df['Equity'].head(5).tolist()
+        avg_equity = np.mean(equity_values) if equity_values else 0
+        
+        if avg_equity  0
+            core_roe = (total_after_tax_profit  avg_equity)  100
+            details = {
+                core_roe round(core_roe, 2),
+                total_profit round(total_after_tax_profit, 2),
+                avg_equity round(avg_equity, 2)
+            }
+            return core_roe, details
+        
+        return 0, {}
+    
+    def calculate_macd_weekly(self, stock_id str) - Tuple[bool, Dict]
+        
+        計算週線MACD
+        檢查OSC (柱狀體)  0
+        
+        end_date = datetime.now().strftime(%Y-%m-%d)
+        start_date = (datetime.now() - timedelta(days=365)).strftime(%Y-%m-%d)
+        
+        # 取得日線資料
+        df = self.api.get_data(TaiwanStockPrice, stock_id, start_date, end_date)
+        
+        if df.empty
+            return False, {}
+        
+        # 轉換為週線
+        df['date'] = pd.to_datetime(df['date'])
+        df.set_index('date', inplace=True)
+        weekly_df = df['close'].resample('W').last().dropna()
+        
+        if len(weekly_df)  26
+            return False, {}
+        
+        # 計算MACD
+        ema_12 = weekly_df.ewm(span=12, adjust=False).mean()
+        ema_26 = weekly_df.ewm(span=26, adjust=False).mean()
+        dif = ema_12 - ema_26
+        dem = dif.ewm(span=9, adjust=False).mean()
+        osc = dif - dem
+        
+        # 取最新值
+        latest_osc = osc.iloc[-1]
+        latest_dif = dif.iloc[-1]
+        latest_dem = dem.iloc[-1]
+        
+        details = {
+            osc round(latest_osc, 4),
+            dif round(latest_dif, 4),
+            dem round(latest_dem, 4),
+            date weekly_df.index[-1].strftime(%Y-%m-%d)
+        }
+        
+        return latest_osc  0, details
+    
+    def screen_stocks(self, stock_list List[str] = None) - pd.DataFrame
+        執行三重篩選
+        if stock_list is None
+            stock_list = self.get_stock_list()
+        
+        results = []
+        total = len(stock_list)
+        
+        print(f開始篩選 {total} 支股票...)
+        
+        for idx, stock_id in enumerate(stock_list, 1)
+            print(f處理中 {stock_id} ({idx}{total}))
+            
+            try
+                # 條件1 本業稅後淨利率  10%
+                profit_margin, margin_details = self.calculate_core_profit_margin(stock_id)
+                
+                # 條件2 本業ROE  15%
+                core_roe, roe_details = self.calculate_core_roe(stock_id)
+                
+                # 條件3 週線MACD紅柱
+                macd_pass, macd_details = self.calculate_macd_weekly(stock_id)
+                
+                # 判斷是否通過篩選
+                pass_condition1 = profit_margin  10
+                pass_condition2 = core_roe  15
+                pass_condition3 = macd_pass
+                
+                all_pass = pass_condition1 and pass_condition2 and pass_condition3
+                
+                results.append({
+                    股票代號 stock_id,
+                    本業稅後淨利率(%) margin_details.get(average, 0),
+                    本業ROE(%) roe_details.get(core_roe, 0),
+                    週MACD_OSC macd_details.get(osc, 0),
+                    條件1_淨利率10% ✓ if pass_condition1 else ✗,
+                    條件2_ROE15% ✓ if pass_condition2 else ✗,
+                    條件3_MACD紅柱 ✓ if pass_condition3 else ✗,
+                    全部通過 ✓ if all_pass else ✗
+                })
+                
+                # 避免API請求過於頻繁
+                time.sleep(0.5)
+                
+            except Exception as e
+                print(f處理 {stock_id} 時發生錯誤 {str(e)})
+                continue
+        
+        df_results = pd.DataFrame(results)
+        return df_results
+
+def main()
+    主程式
+    # 初始化API (如有token請填入)
+    api = FinMindAPI(token=)
+    
+    # 建立篩選器
+    screener = StockScreener(api)
+    
+    # 測試用股票列表 (可改為完整列表)
+    test_stocks = [2330, 2317, 2454, 3008, 2912]
+    
+    # 執行篩選
+    results = screener.screen_stocks(test_stocks)
+    
+    # 儲存結果
+    timestamp = datetime.now().strftime(%Y%m%d_%H%M%S)
+    filename = fstock_screening_results_{timestamp}.csv
+    results.to_csv(filename, index=False, encoding='utf-8-sig')
+    
+    print(n + =80)
+    print(篩選完成！)
+    print(=80)
+    print(results.to_string())
+    print(fn結果已儲存至 {filename})
+    
+    # 顯示通過所有條件的股票
+    passed_stocks = results[results[全部通過] == ✓]
+    if not passed_stocks.empty
+        print(n通過所有條件的股票)
+        print(passed_stocks[[股票代號, 本業稅後淨利率(%), 本業ROE(%), 週MACD_OSC]])
+    else
+        print(n沒有股票通過所有條件)
+
+if __name__ == __main__
+    main()
